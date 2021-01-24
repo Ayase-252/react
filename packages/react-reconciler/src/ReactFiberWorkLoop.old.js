@@ -388,9 +388,11 @@ export function getCurrentTime() {
 export function requestUpdateLane(fiber: Fiber): Lane {
   // Special cases
   const mode = fiber.mode;
-  if ((mode & BlockingMode) === NoMode) {
+  const isNotBlockingMode = (mode & BlockingMode) === NoMode;
+  const isNotConcurrentMode = (mode & ConcurrentMode) === NoMode;
+  if (isNotBlockingMode) {
     return (SyncLane: Lane);
-  } else if ((mode & ConcurrentMode) === NoMode) {
+  } else if (isNotConcurrentMode) {
     return getCurrentPriorityLevel() === ImmediateSchedulerPriority
       ? (SyncLane: Lane)
       : (SyncBatchedLane: Lane);
@@ -440,6 +442,8 @@ export function requestUpdateLane(fiber: Fiber): Lane {
     return findTransitionLane(currentEventWipLanes, currentEventPendingLanes);
   }
 
+  // if not in transition
+
   // TODO: Remove this dependency on the Scheduler priority.
   // To do that, we're replacing it with an update lane priority.
   const schedulerPriority = getCurrentPriorityLevel();
@@ -447,28 +451,25 @@ export function requestUpdateLane(fiber: Fiber): Lane {
   // Find the correct lane based on priorities. Ideally, this would just be
   // the update lane priority, but for now we're also checking for discrete
   // updates and falling back to the scheduler priority.
-  let lane;
   if (
     // TODO: Temporary. We're removing the concept of discrete updates.
     (executionContext & DiscreteEventContext) !== NoContext &&
     schedulerPriority === UserBlockingSchedulerPriority
   ) {
-    lane = findUpdateLane(InputDiscreteLanePriority, currentEventWipLanes);
+    return findUpdateLane(InputDiscreteLanePriority, currentEventWipLanes);
   } else if (
     decoupleUpdatePriorityFromScheduler &&
     getCurrentUpdateLanePriority() !== NoLanePriority
   ) {
     const currentLanePriority = getCurrentUpdateLanePriority();
-    lane = findUpdateLane(currentLanePriority, currentEventWipLanes);
+    return findUpdateLane(currentLanePriority, currentEventWipLanes);
   } else {
     const schedulerLanePriority = schedulerPriorityToLanePriority(
       schedulerPriority,
     );
 
-    lane = findUpdateLane(schedulerLanePriority, currentEventWipLanes);
+    return findUpdateLane(schedulerLanePriority, currentEventWipLanes);
   }
-
-  return lane;
 }
 
 function requestRetryLane(fiber: Fiber) {

@@ -122,6 +122,9 @@ export function setCurrentUpdateLanePriority(newLanePriority: LanePriority) {
 // Used by getHighestPriorityLanes and getNextLanes:
 let return_highestLanePriority: LanePriority = DefaultLanePriority;
 
+/**
+ * 获取最高优先级的 Leans
+ */
 function getHighestPriorityLanes(lanes: Lanes | Lane): Lanes {
   if ((SyncLane & lanes) !== NoLanes) {
     return_highestLanePriority = SyncLanePriority;
@@ -197,25 +200,37 @@ function getHighestPriorityLanes(lanes: Lanes | Lane): Lanes {
   return lanes;
 }
 
+/**
+ * 从 SchedulerPriority 到 LanePriority 的映射
+ *
+ */
 export function schedulerPriorityToLanePriority(
   schedulerPriorityLevel: ReactPriorityLevel,
 ): LanePriority {
   switch (schedulerPriorityLevel) {
+    // Immediate 走 SyncLane
     case ImmediateSchedulerPriority:
       return SyncLanePriority;
+    // UserBlocking 走 InputContinuousLane
     case UserBlockingSchedulerPriority:
       return InputContinuousLanePriority;
+    // Normal 或者 Low 走 Default
     case NormalSchedulerPriority:
     case LowSchedulerPriority:
       // TODO: Handle LowSchedulerPriority, somehow. Maybe the same lane as hydration.
       return DefaultLanePriority;
+    // Idle 走 Idle
     case IdleSchedulerPriority:
       return IdleLanePriority;
+    // 兜底
     default:
       return NoLanePriority;
   }
 }
 
+/**
+ * 从 LanePriority 到 SchedulerPriority 的映射
+ */
 export function lanePriorityToSchedulerPriority(
   lanePriority: LanePriority,
 ): ReactPriorityLevel {
@@ -580,6 +595,7 @@ export function findRetryLane(wipLanes: Lanes): Lane {
 }
 
 function getHighestPriorityLane(lanes: Lanes) {
+  // a bit trick to get the most significate bit
   return lanes & -lanes;
 }
 
