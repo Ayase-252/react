@@ -190,11 +190,34 @@ function legacyRenderSubtreeIntoContainer(
   let fiberRoot;
   if (!root) {
     // Initial mount
-    root = container._reactRootContainer = legacyCreateRootFromDOMContainer(
+    fiberRoot = initMount(container);
+  } else {
+    fiberRoot = updateMount(container);
+  }
+  return getPublicRootInstance(fiberRoot);
+
+  function updateMount(container) {
+    const root = container._reactRootContainer;
+    const fiberRoot = root._internalRoot;
+    if (typeof callback === 'function') {
+      const originalCallback = callback;
+      callback = function() {
+        const instance = getPublicRootInstance(fiberRoot);
+        originalCallback.call(instance);
+      };
+    }
+    // Update
+    updateContainer(children, fiberRoot, parentComponent, callback);
+    return fiberRoot;
+  }
+
+  function initMount(container) {
+    container._reactRootContainer = legacyCreateRootFromDOMContainer(
       container,
       forceHydrate,
     );
-    fiberRoot = root._internalRoot;
+    const root = container._reactRootContainer;
+    const fiberRoot = root._internalRoot;
     if (typeof callback === 'function') {
       const originalCallback = callback;
       callback = function() {
@@ -206,19 +229,8 @@ function legacyRenderSubtreeIntoContainer(
     unbatchedUpdates(() => {
       updateContainer(children, fiberRoot, parentComponent, callback);
     });
-  } else {
-    fiberRoot = root._internalRoot;
-    if (typeof callback === 'function') {
-      const originalCallback = callback;
-      callback = function() {
-        const instance = getPublicRootInstance(fiberRoot);
-        originalCallback.call(instance);
-      };
-    }
-    // Update
-    updateContainer(children, fiberRoot, parentComponent, callback);
+    return fiberRoot;
   }
-  return getPublicRootInstance(fiberRoot);
 }
 
 export function findDOMNode(
