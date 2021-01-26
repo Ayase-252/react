@@ -128,8 +128,13 @@ function createRootImpl(
       options.hydrationOptions != null &&
       options.hydrationOptions.mutableSources) ||
     null;
-  const root = createContainer(container, tag, hydrate, hydrationCallbacks);
-  markContainerAsRoot(root.current, container);
+  const newFiberRoot = createContainer(
+    container,
+    tag,
+    hydrate,
+    hydrationCallbacks,
+  );
+  markContainerAsRoot(newFiberRoot.current, container);
 
   const rootContainerElement =
     container.nodeType === COMMENT_NODE ? container.parentNode : container;
@@ -138,11 +143,11 @@ function createRootImpl(
   if (mutableSources) {
     for (let i = 0; i < mutableSources.length; i++) {
       const mutableSource = mutableSources[i];
-      registerMutableSourceForHydration(root, mutableSource);
+      registerMutableSourceForHydration(newFiberRoot, mutableSource);
     }
   }
 
-  return root;
+  return newFiberRoot;
 }
 
 export function createRoot(
